@@ -287,10 +287,10 @@ async function generateSignatureImage(params: {
   }
 
   const textOverlaySvg = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      ${textElements.join('\n')}
-    </svg>
-  `;
+  <?xml version="1.0" encoding="UTF-8"?>
+  <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    ${textElements.join('\n')}
+  </svg>`;
 
   const textOverlayBuffer = Buffer.from(textOverlaySvg, 'utf-8');
 

@@ -1,0 +1,36 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .icon {
+    font-size: 2rem;
+  }
+  
+  .message {
+    text-align: center;
+    color: #dc2626;
+    font-weight: 500;
+    margin: 0;
+  }
+  
+  .retryButton {
+    background: #dc2626;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  .retryButton:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+  }

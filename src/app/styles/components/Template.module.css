@@ -1,0 +1,123 @@
+.templateContainer {
+    position: relative;
+    display: inline-block;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .templateImage {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+  }
+  
+  .textOverlay {
+    position: absolute;
+    pointer-events: none;
+  }
+  
+  .nameText {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333333;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+  
+  .emailText {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #0066cc;
+    text-decoration: none;
+  }
+  
+  .phoneText {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #666666;
+  }
+  
+  .templatePreview {
+    background: #f8fafc;
+    padding: 2rem;
+    border-radius: 12px;
+    border: 2px dashed #d1d5db;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  
+  .templatePreview:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+  }
+  
+  .uploadArea {
+    padding: 3rem 2rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fafafa;
+  }
+  
+  .uploadArea:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+  }
+  
+  .uploadArea.dragOver {
+    border-color: #667eea;
+    background: #e0e7ff;
+    transform: scale(1.02);
+  }
+  
+  .uploadIcon {
+    font-size: 3rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+  }
+  
+  .uploadText {
+    color: #4b5563;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .uploadSubtext {
+    color: #9ca3af;
+    font-size: 0.875rem;
+  }
+  
+  /* Responsive para template */
+  @media (max-width: 768px) {
+    .templateContainer {
+      padding: 0.5rem;
+    }
+    
+    .nameText {
+      font-size: 16px;
+    }
+    
+    .emailText,
+    .phoneText {
+      font-size: 12px;
+    }
+    
+    .templatePreview {
+      padding: 1rem;
+    }
+    
+    .uploadArea {
+      padding: 2rem 1rem;
+    }
+    
+    .uploadIcon {
+      font-size: 2rem;
+    }
+  }

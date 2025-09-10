@@ -1,103 +1,235 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from "next/navigation";
+import Head from 'next/head';
+import styles from './styles/Form.module.css';
+import { 
+  InputField,
+  SubmitButton
+} from './components';
+
+interface FormData {
+  nome: string;
+  telefone: string;
+  email: string;
+}
+
+interface ValidationResponse {
+  valid: boolean;
+  message: string;
+  suggestions?: string[];
+}
+
+const allowedDomains = ["meuprospera.com.br"];
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [formData, setFormData] = useState<FormData>({
+    nome: '',
+    telefone: '',
+    email: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [emailValidation, setEmailValidation] = useState<ValidationResponse | null>(null);
+  const [emailTouched, setEmailTouched] = useState(false); // controla se o usuário já digitou
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const router = useRouter();
+
+  // useEffect para validar o email sempre que mudar
+  useEffect(() => {
+    if (!emailTouched) return; // só valida se o usuário já mexeu no campo
+
+    if (!formData.email) {
+      setEmailValidation({
+        valid: false,
+        message: "E-mail é obrigatório",
+      });
+      return;
+    }
+
+    const trimmed = formData.email.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(trimmed)) {
+      setEmailValidation({
+        valid: false,
+        message: "Formato de e-mail inválido",
+      });
+      return;
+    }
+
+    const [localPart, domain] = trimmed.split("@");
+
+    if (!allowedDomains.includes(domain)) {
+      setEmailValidation({
+        valid: false,
+        message: "Domínio de e-mail não permitido",
+        suggestions: allowedDomains.map((d) => `${localPart}@${d}`),
+      });
+      return;
+    }
+
+    setEmailValidation({
+      valid: true,
+      message: "E-mail válido",
+    });
+  }, [formData.email, emailTouched]);
+
+  // Função para formatar o telefone
+  const formatPhone = (value: string): string => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length <= 2) {
+      return `(${digits}`;
+    } else if (digits.length <= 6) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    } else if (digits.length <= 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    } else {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    let formattedValue = value;
+
+    if (name === "telefone") {
+      formattedValue = formatPhone(value);
+    }
+
+    if (name === "email" && !emailTouched) {
+      setEmailTouched(true); // marca que o usuário começou a digitar no email
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: formattedValue
+    }));
+
+    if (errors[name as keyof FormData]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<FormData> = {};
+
+    if (!formData.nome.trim()) {
+      newErrors.nome = 'Nome é obrigatório';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'E-mail é obrigatório';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0 && emailValidation?.valid === true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+  
+    if (!validateForm()) return;
+  
+    setLoading(true);
+  
+    try {
+      // Chama API para gerar assinatura
+      const response = await fetch("/api/generate-signature", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Erro ao gerar assinatura");
+      }
+  
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+  
+      // Salva dados + assinatura
+      localStorage.setItem(
+        "signatureData",
+        JSON.stringify({
+          ...formData,
+          signatureUrl: url,
+        })
+      );
+  
+      router.push("/preview");
+    } catch (error) {
+      console.error("Erro:", error);
+      alert("Erro ao gerar assinatura. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  return (
+    <>
+      <Head>
+        <title>Gerador de Assinatura de E-mail</title>
+        <meta name="description" content="Crie sua assinatura de e-mail personalizada" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <h1 className={styles.title}>
+            Gerador de Assinatura de E-mail
+          </h1>
+
+          <p className={styles.description}>
+            Preencha os dados abaixo para gerar sua assinatura personalizada
+          </p>
+
+          <form className={styles.form} onSubmit={handleSubmit}>
+          <InputField
+              id="nome"
+              name="nome"
+              label="Nome *"
+              value={formData.nome}
+              onChange={handleChange}
+              placeholder="Digite seu Nome e Sobrenome"
+              error={errors.nome}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+            <InputField
+              id="telefone"
+              name="telefone"
+              label="Telefone"
+              type="tel"
+              value={formData.telefone}
+              onChange={handleChange}
+              placeholder="(99) 99999-9999"
+              maxLength={15}
+            />
+
+            <InputField
+              id="email"
+              name="email"
+              label="E-mail *"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="seuemail@meuprospera.com.br"
+              error={errors.email || (emailTouched && !emailValidation?.valid ? emailValidation?.message : undefined)}
+            />
+
+            <SubmitButton loading={loading} disabled={!emailValidation?.valid}>
+            Enviar
+            </SubmitButton>
+          
+          </form>
+        </main>
+      </div>
+    </>
   );
 }

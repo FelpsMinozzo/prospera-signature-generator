@@ -155,9 +155,9 @@ interface FontConfig {
 }
 
 const FONT_CONFIGS = {
-  nome: { family: 'Arial', size: 40, color: '#333333', weight: 400 } as FontConfig,
-  telefone: { family: 'Arial', size: 30, color: '#333333', weight: 400 } as FontConfig,
-  email: { family: 'Arial', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  nome: { family: 'DejaVu Sans, Arial, sans-serif', size: 40, color: '#333333', weight: 400 } as FontConfig,
+  telefone: { family: 'DejaVu Sans, Arial, sans-serif', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  email: { family: 'DejaVu Sans, Arial, sans-serif', size: 30, color: '#333333', weight: 400 } as FontConfig,
 };
 
 export async function POST(req: Request) {
@@ -287,10 +287,10 @@ async function generateSignatureImage(params: {
   }
 
   const textOverlaySvg = `
-  <?xml version="1.0" encoding="UTF-8"?>
-  <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-    ${textElements.join('\n')}
-  </svg>`;
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      ${textElements.join('\n')}
+    </svg>
+  `;
 
   const textOverlayBuffer = Buffer.from(textOverlaySvg, 'utf-8');
 

@@ -293,21 +293,14 @@ async function generateSignatureWithSharp(params: {
     if (!metadata.width || !metadata.height) {
       throw new Error('Não foi possível obter dimensões do template');
     }
+    
+    const startY = 50;
 
-    const width = metadata.width;
-    const height = metadata.height;
-
-    // Configurações de layout
-    const leftMargin = 0; // Será ajustado no composite
-    const startY = 50;    // Altura do texto no SVG
-    const lineHeight = 50;
-
-    // Criar elementos de texto usando SVG
     const nomeBuffer = await generateTextSvg(nome, 40, '#333', 'normal', 0, startY);
     const emailBuffer = await generateTextSvg(email, 30, '#333', 'normal', 0, startY);
     
     const compositeElements = [
-      { input: nomeBuffer, top: 120, left: 420 }, // Ajustar posições conforme necessário
+      { input: nomeBuffer, top: 120, left: 420 },
       { input: emailBuffer, top: 170, left: 420 }
     ];
 

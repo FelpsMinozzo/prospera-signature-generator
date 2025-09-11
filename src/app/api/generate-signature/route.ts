@@ -225,12 +225,7 @@ export async function POST(req: Request) {
       templatePath,
     });
 
-    return new Response(
-      signatureBuffer.buffer.slice(
-        signatureBuffer.byteOffset,
-        signatureBuffer.byteOffset + signatureBuffer.byteLength
-      ),
-      {
+      return new Response(new Uint8Array(signatureBuffer), {
         status: 200,
         headers: {
           'Content-Type': 'image/png',
@@ -240,7 +235,7 @@ export async function POST(req: Request) {
           'Cache-Control': 'no-cache',
         },
       }
-    );
+    );    
   } catch (error) {
     console.error('Erro ao gerar assinatura:', error);
     return NextResponse.json(

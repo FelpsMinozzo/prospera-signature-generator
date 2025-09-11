@@ -17,9 +17,9 @@ interface FontConfig {
 }
 
 const FONT_CONFIGS = {
-  nome: { family: 'Arial', size: 40, color: '#333333', weight: 400 } as FontConfig,
-  telefone: { family: 'Arial', size: 30, color: '#333333', weight: 400 } as FontConfig,
-  email: { family: 'Arial', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  nome: { family: 'DejaVu Sans, Arial, sans-serif', size: 40, color: '#333333', weight: 400 } as FontConfig,
+  telefone: { family: 'DejaVu Sans, Arial, sans-serif', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  email: { family: 'DejaVu Sans, Arial, sans-serif', size: 30, color: '#333333', weight: 400 } as FontConfig,
 };
 
 export async function POST(req: Request) {

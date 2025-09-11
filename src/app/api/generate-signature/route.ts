@@ -16,10 +16,11 @@ interface FontConfig {
   weight: number;
 }
 
+// Configurações de fonte
 const FONT_CONFIGS = {
-  nome: { family: 'DejaVu Sans, Arial, sans-serif', size: 40, color: '#333333', weight: 400 } as FontConfig,
-  telefone: { family: 'DejaVu Sans, Arial, sans-serif', size: 30, color: '#333333', weight: 400 } as FontConfig,
-  email: { family: 'DejaVu Sans, Arial, sans-serif', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  nome: { family: 'ArialMT', size: 40, color: '#333333', weight: 400 } as FontConfig,
+  telefone: { family: 'ArialMT', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  email: { family: 'ArialMT', size: 30, color: '#333333', weight: 400 } as FontConfig,
 };
 
 export async function POST(req: Request) {
@@ -55,14 +56,23 @@ export async function POST(req: Request) {
       );
     }
 
+    const fontPath = path.join(process.cwd(), 'public', 'fonts', 'ArialMT.woff2');
+
+    if (!fs.existsSync(fontPath)) {
+      return NextResponse.json(
+        { success: false, error: 'Fonte ArialMT não encontrada no servidor' },
+        { status: 500 }
+      );
+    }
+
     const signatureBuffer = await generateSignatureImage({
       nome,
       telefone,
       email,
       templatePath,
+      fontPath,
     });
 
-    // 👇 Conversão do Buffer -> Uint8Array
     return new Response(new Uint8Array(signatureBuffer), {
       status: 200,
       headers: {
@@ -87,8 +97,9 @@ async function generateSignatureImage(params: {
   telefone?: string;
   email: string;
   templatePath: string;
+  fontPath: string;
 }): Promise<Buffer> {
-  const { nome, telefone, email, templatePath } = params;
+  const { nome, telefone, email, templatePath, fontPath } = params;
   const templateBuffer = fs.readFileSync(templatePath);
   const template = sharp(templateBuffer);
   const { width, height } = await template.metadata();
@@ -148,8 +159,20 @@ async function generateSignatureImage(params: {
     `);
   }
 
+  // ✅ Ler a fonte e converter para Base64
+  const fontBuffer = fs.readFileSync(fontPath);
+  const fontBase64 = fontBuffer.toString('base64');
+
+  // ✅ SVG com fonte embutida
   const textOverlaySvg = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        @font-face {
+          font-family: 'ArialMT';
+          src: url('data:font/woff2;charset=utf-8;base64,${fontBase64}') format('woff2');
+        }
+        text { font-family: 'ArialMT'; }
+      </style>
       ${textElements.join('\n')}
     </svg>
   `;

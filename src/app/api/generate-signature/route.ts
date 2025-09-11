@@ -172,7 +172,6 @@
 //     .replace(/"/g, '&quot;')
 //     .replace(/'/g, '&#39;');
 // }
-
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 import path from 'path';
@@ -226,30 +225,37 @@ export async function POST(req: Request) {
       templatePath,
     });
 
-    return new Response(signatureBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename="assinatura-${nome
-          .replace(/\s+/g, '-')
-          .toLowerCase()}.png"`,
-        'Cache-Control': 'no-cache',
-      },
-    });
+    return new Response(
+      signatureBuffer.buffer.slice(
+        signatureBuffer.byteOffset,
+        signatureBuffer.byteOffset + signatureBuffer.byteLength
+      ),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'image/png',
+          'Content-Disposition': `attachment; filename="assinatura-${nome
+            .replace(/\s+/g, '-')
+            .toLowerCase()}.png"`,
+          'Cache-Control': 'no-cache',
+        },
+      }
+    );
   } catch (error) {
     console.error('Erro ao gerar assinatura:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Erro interno do servidor ao gerar assinatura',
-      },
+      { success: false, error: 'Erro interno do servidor ao gerar assinatura' },
       { status: 500 }
     );
   }
 }
 
-async function generateTextSvg(text: string, fontSize: number, color: string, weight: string, x: number, y: number): Promise<Buffer> {
-  // Escapar caracteres especiais para SVG
+async function generateTextSvg(
+  text: string,
+  fontSize: number,
+  color: string,
+  weight: string
+): Promise<Buffer> {
   const escapedText = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -258,22 +264,12 @@ async function generateTextSvg(text: string, fontSize: number, color: string, we
     .replace(/'/g, '&#39;');
 
   const svg = `
-    <svg width="800" height="100" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;display=swap');
-          .text { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-          }
-        </style>
-      </defs>
-      <text x="${x}" y="${y}" 
-            class="text"
-            font-size="${fontSize}px" 
-            font-weight="${weight}" 
-            fill="${color}">${escapedText}</text>
-    </svg>`;
-  
+    <svg xmlns="http://www.w3.org/2000/svg" width="800" height="60">
+      <text x="0" y="${fontSize}" font-family="Inter, sans-serif" font-size="${fontSize}" font-weight="${weight}" fill="${color}">
+        ${escapedText}
+      </text>
+    </svg>
+  `;
   return Buffer.from(svg);
 }
 
@@ -287,30 +283,19 @@ async function generateSignatureWithSharp(params: {
 
   try {
     const templateBuffer = fs.readFileSync(templatePath);
-    const template = sharp(templateBuffer);
-    const metadata = await template.metadata();
+    const compositeElements: sharp.OverlayOptions[] = [];
 
-    if (!metadata.width || !metadata.height) {
-      throw new Error('Não foi possível obter dimensões do template');
-    }
-    
-    const startY = 50;
+    const nomeBuffer = await generateTextSvg(nome, 40, '#333', 'bold');
+    compositeElements.push({ input: nomeBuffer, top: 120, left: 420 });
 
-    const nomeBuffer = await generateTextSvg(nome, 40, '#333', 'normal', 0, startY);
-    const emailBuffer = await generateTextSvg(email, 30, '#333', 'normal', 0, startY);
-    
-    const compositeElements = [
-      { input: nomeBuffer, top: 120, left: 420 },
-      { input: emailBuffer, top: 170, left: 420 }
-    ];
+    const emailBuffer = await generateTextSvg(email, 30, '#333', 'normal');
+    compositeElements.push({ input: emailBuffer, top: 170, left: 420 });
 
-    // Adicionar telefone se existir
     if (telefone && telefone.trim() !== '') {
-      const telefoneBuffer = await generateTextSvg(telefone, 30, '#333', 'normal', 0, startY);
+      const telefoneBuffer = await generateTextSvg(telefone, 30, '#333', 'normal');
       compositeElements.push({ input: telefoneBuffer, top: 220, left: 420 });
     }
 
-    // Compor imagem final
     const result = await sharp(templateBuffer)
       .composite(compositeElements)
       .png()
@@ -319,6 +304,8 @@ async function generateSignatureWithSharp(params: {
     return result;
   } catch (error) {
     console.error('Error generating signature with Sharp:', error);
-    throw new Error(`Failed to generate signature: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to generate signature: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createCanvas, loadImage, registerFont } from 'canvas';
+import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
 
@@ -17,16 +17,10 @@ interface FontConfig {
 }
 
 const FONT_CONFIGS = {
-  nome: { family: 'ArialMT', size: 40, color: '#333333', weight: 400 } as FontConfig,
-  telefone: { family: 'ArialMT', size: 30, color: '#333333', weight: 400 } as FontConfig,
-  email: { family: 'ArialMT', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  nome: { family: 'DejaVu Sans, Arial, sans-serif', size: 40, color: '#333333', weight: 400 } as FontConfig,
+  telefone: { family: 'DejaVu Sans, Arial, sans-serif', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  email: { family: 'DejaVu Sans, Arial, sans-serif', size: 30, color: '#333333', weight: 400 } as FontConfig,
 };
-
-const fontPath = path.join(process.cwd(), 'public', 'fonts', 'ARIAL.TTF');
-if (!fs.existsSync(fontPath)) {
-  throw new Error('Fonte ArialMT não encontrada no servidor');
-}
-registerFont(fontPath, { family: 'ArialMT' });
 
 export async function POST(req: Request) {
   try {
@@ -47,7 +41,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const templatePath = path.join(process.cwd(), 'public', 'templates', 'signature-template.png');
+    const templatePath = path.join(
+      process.cwd(),
+      'public',
+      'templates',
+      'signature-template.png'
+    );
+
     if (!fs.existsSync(templatePath)) {
       return NextResponse.json(
         { success: false, error: 'Template de assinatura não encontrado' },
@@ -55,13 +55,20 @@ export async function POST(req: Request) {
       );
     }
 
-    const signatureBuffer = await generateSignatureImage({ nome, telefone, email, templatePath });
+    const signatureBuffer = await generateSignatureImage({
+      nome,
+      telefone,
+      email,
+      templatePath,
+    });
 
-    return new Response(signatureBuffer, {
+    return new Response(new Uint8Array(signatureBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename="assinatura-${nome.replace(/\s+/g, '-').toLowerCase()}.png"`,
+        'Content-Disposition': `attachment; filename="assinatura-${nome
+          .replace(/\s+/g, '-')
+          .toLowerCase()}.png"`,
         'Cache-Control': 'no-cache',
       },
     });
@@ -81,33 +88,77 @@ async function generateSignatureImage(params: {
   templatePath: string;
 }): Promise<Buffer> {
   const { nome, telefone, email, templatePath } = params;
+  const templateBuffer = fs.readFileSync(templatePath);
+  const template = sharp(templateBuffer);
+  const { width, height } = await template.metadata();
 
-  const template = await loadImage(templatePath);
-  const canvas = createCanvas(template.width!, template.height!);
-  const ctx = canvas.getContext('2d');
-
-  // Desenhar template
-  ctx.drawImage(template, 0, 0);
+  if (!width || !height) throw new Error('Não foi possível obter dimensões do template');
 
   const leftMargin = 420;
   const startY = 180;
   const lineHeight = 40;
 
-  // Função para desenhar texto com configuração
-  function drawText(text: string, fontConfig: FontConfig, x: number, y: number) {
-    ctx.font = `${fontConfig.size}px ${fontConfig.family}`;
-    ctx.fillStyle = fontConfig.color;
-    ctx.textBaseline = 'top';
-    ctx.fillText(text, x, y);
-  }
+  const textPositions = {
+    nome: { x: leftMargin, y: startY },
+    email: { x: leftMargin, y: startY + lineHeight },
+    telefone: { x: leftMargin, y: startY + lineHeight * 2 },
+  };
 
-  drawText(nome, FONT_CONFIGS.nome, leftMargin, startY);
-  drawText(email, FONT_CONFIGS.email, leftMargin, startY + lineHeight);
+  const textElements: string[] = [];
+
+  textElements.push(`
+    <text 
+      x="${textPositions.nome.x}" 
+      y="${textPositions.nome.y}" 
+      font-family="${FONT_CONFIGS.nome.family}" 
+      font-size="${FONT_CONFIGS.nome.size}" 
+      font-weight="${FONT_CONFIGS.nome.weight}"
+      fill="${FONT_CONFIGS.nome.color}"
+      text-anchor="start"
+      dominant-baseline="hanging"
+    >${escapeXml(nome)}</text>
+  `);
+
+  textElements.push(`
+    <text 
+      x="${textPositions.email.x}" 
+      y="${textPositions.email.y}" 
+      font-family="${FONT_CONFIGS.email.family}" 
+      font-size="${FONT_CONFIGS.email.size}" 
+      font-weight="${FONT_CONFIGS.email.weight}"
+      fill="${FONT_CONFIGS.email.color}"
+      text-anchor="start"
+      dominant-baseline="hanging"
+    >${escapeXml(email)}</text>
+  `);
+
   if (telefone?.trim()) {
-    drawText(telefone, FONT_CONFIGS.telefone, leftMargin, startY + lineHeight * 2);
+    textElements.push(`
+      <text 
+        x="${textPositions.telefone.x}" 
+        y="${textPositions.telefone.y}" 
+        font-family="${FONT_CONFIGS.telefone.family}" 
+        font-size="${FONT_CONFIGS.telefone.size}" 
+        font-weight="${FONT_CONFIGS.telefone.weight}"
+        fill="${FONT_CONFIGS.telefone.color}"
+        text-anchor="start"
+        dominant-baseline="hanging"
+      >${escapeXml(telefone)}</text>
+    `);
   }
 
-  return canvas.toBuffer('image/png');
+  const textOverlaySvg = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      ${textElements.join('\n')}
+    </svg>
+  `;
+
+  const textOverlayBuffer = Buffer.from(textOverlaySvg, 'utf-8');
+
+  return await template
+    .composite([{ input: textOverlayBuffer, top: 0, left: 0 }])
+    .png({ quality: 100, compressionLevel: 0 })
+    .toBuffer();
 }
 
 function escapeXml(text: string): string {
@@ -118,4 +169,3 @@ function escapeXml(text: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-

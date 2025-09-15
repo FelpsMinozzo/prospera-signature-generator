@@ -114,18 +114,18 @@ async function generateSignatureImage(params: {
       telefone: { x: leftMargin, y: startY + lineHeight * 2 },
     };
 
-    // Voltar ao texto real com configurações mais robustas
+    // Tentativa mais agressiva - forçar fontes que existem
     const compositeElements: sharp.OverlayOptions[] = [];
 
-    // Nome - usando configurações mais básicas e compatíveis
+    // Nome - usando apenas monospace que sempre existe
     const nomeSvg = `
       <svg width="600" height="60" xmlns="http://www.w3.org/2000/svg">
         <text 
           x="0" 
           y="40" 
-          font-size="36" 
-          fill="black"
-          font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
+          font-size="32" 
+          fill="#000000"
+          font-family="monospace"
         >${escapeXml(nome)}</text>
       </svg>
     `;
@@ -142,9 +142,9 @@ async function generateSignatureImage(params: {
         <text 
           x="0" 
           y="30" 
-          font-size="26" 
-          fill="black"
-          font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
+          font-size="24" 
+          fill="#000000"
+          font-family="monospace"
         >${escapeXml(email)}</text>
       </svg>
     `;
@@ -162,9 +162,9 @@ async function generateSignatureImage(params: {
           <text 
             x="0" 
             y="30" 
-            font-size="26" 
-            fill="black"
-            font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
+            font-size="24" 
+            fill="#000000"
+            font-family="monospace"
           >${escapeXml(telefone)}</text>
         </svg>
       `;
@@ -176,9 +176,10 @@ async function generateSignatureImage(params: {
       });
     }
 
-    console.log('Testando com texto real e fontes do sistema Linux');
-    console.log('Nome a renderizar:', nome);
-    console.log('Email a renderizar:', email);
+    // Debug - vamos também salvar o SVG para inspecionar
+    console.log('Usando monospace - fonte que sempre existe');
+    console.log('Primeiro SVG a processar:', nomeSvg);
+    console.log('Texto escapado do nome:', escapeXml(nome));
 
     // Compor a imagem final
     return await template

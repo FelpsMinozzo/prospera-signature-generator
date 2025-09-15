@@ -3,9 +3,6 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
 
-// Configurar variável de ambiente para evitar erro do fontconfig
-process.env.FONTCONFIG_PATH = '';
-
 export const runtime = 'nodejs';
 
 interface SignatureData {

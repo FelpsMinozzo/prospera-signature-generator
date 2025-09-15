@@ -3,9 +3,19 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
 
+// Configurar variáveis de ambiente para suprimir erros do fontconfig
 process.env.FONTCONFIG_PATH = '';
 process.env.FONTCONFIG_FILE = '';
 process.env.FC_CONFIG_FILE = '';
+
+// Suprimir stderr do fontconfig (método mais agressivo)
+const originalStderr = process.stderr.write;
+process.stderr.write = function(chunk: any, encoding?: any, callback?: any) {
+  if (typeof chunk === 'string' && chunk.includes('Fontconfig error')) {
+    return true;
+  }
+  return originalStderr.call(process.stderr, chunk, encoding, callback);
+};
 
 export const runtime = 'nodejs';
 

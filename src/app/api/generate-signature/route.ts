@@ -3,19 +3,8 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
 
-// Configurar variáveis de ambiente para suprimir erros do fontconfig
+// Configurar variável de ambiente para evitar erro do fontconfig
 process.env.FONTCONFIG_PATH = '';
-process.env.FONTCONFIG_FILE = '';
-process.env.FC_CONFIG_FILE = '';
-
-// Suprimir stderr do fontconfig (método mais agressivo)
-const originalStderr = process.stderr.write;
-process.stderr.write = function(chunk: any, encoding?: any, callback?: any) {
-  if (typeof chunk === 'string' && chunk.includes('Fontconfig error')) {
-    return true;
-  }
-  return originalStderr.call(process.stderr, chunk, encoding, callback);
-};
 
 export const runtime = 'nodejs';
 
@@ -33,32 +22,12 @@ interface FontConfig {
 }
 
 const FONT_CONFIGS = {
-  nome: { family: 'CustomArial, Arial, sans-serif', size: 40, color: '#333333', weight: 'bold' } as FontConfig,
-  telefone: { family: 'CustomArial, Arial, sans-serif', size: 30, color: '#333333', weight: 'normal' } as FontConfig,
-  email: { family: 'CustomArial, Arial, sans-serif', size: 30, color: '#333333', weight: 'normal' } as FontConfig,
+  nome: { family: 'Arial, sans-serif', size: 40, color: '#333333', weight: '700' } as FontConfig,
+  telefone: { family: 'Arial, sans-serif', size: 30, color: '#333333', weight: '400' } as FontConfig,
+  email: { family: 'Arial, sans-serif', size: 30, color: '#333333', weight: '400' } as FontConfig,
 };
 
 export async function POST(req: Request) {
-  // Criar configuração temporária do fontconfig
-  const tempConfigContent = `<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <config></config>
-</fontconfig>`;
-  
-  const tempDir = path.join(process.cwd(), '.tmp');
-  const tempConfigPath = path.join(tempDir, 'fonts.conf');
-  
-  try {
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    fs.writeFileSync(tempConfigPath, tempConfigContent);
-    process.env.FONTCONFIG_FILE = tempConfigPath;
-  } catch (e) {
-    // Ignorar erros na criação do arquivo temporário
-  }
-
   try {
     const { nome, telefone, email }: SignatureData = await req.json();
 
@@ -126,15 +95,7 @@ async function generateSignatureImage(params: {
   const { nome, telefone, email, templatePath } = params;
   
   try {
-    // Carregar fonte customizada
-    const fontPath = path.join(process.cwd(), 'public', 'fonts', 'ARIAL.TTF');
-    let fontBase64 = '';
-    
-    if (fs.existsSync(fontPath)) {
-      const fontBuffer = fs.readFileSync(fontPath);
-      fontBase64 = fontBuffer.toString('base64');
-    }
-
+    // Primeiro teste sem fonte customizada - usar Arial do sistema
     const templateBuffer = fs.readFileSync(templatePath);
     const template = sharp(templateBuffer);
     const { width, height } = await template.metadata();
@@ -199,21 +160,17 @@ async function generateSignatureImage(params: {
       `);
     }
 
-    // Criar SVG overlay com fonte customizada
+    // Criar SVG overlay simples (sem fonte customizada primeiro)
     const textOverlaySvg = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <style>
-            ${fontBase64 ? `
-            @font-face {
-              font-family: 'CustomArial';
-              src: url('data:font/truetype;base64,${fontBase64}');
-            }` : ''}
-          </style>
-        </defs>
         ${textElements.join('\n')}
       </svg>
     `;
+
+    // Debug: log do SVG gerado
+    console.log('SVG gerado:', textOverlaySvg.substring(0, 500));
+    console.log('Dimensões do template:', { width, height });
+    console.log('Posições do texto:', textPositions);
 
     const textOverlayBuffer = Buffer.from(textOverlaySvg, 'utf-8');
 

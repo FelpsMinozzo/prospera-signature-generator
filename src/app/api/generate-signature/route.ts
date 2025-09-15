@@ -22,9 +22,9 @@ interface FontConfig {
 }
 
 const FONT_CONFIGS = {
-  nome: { family: 'Arial, sans-serif', size: 40, color: '#333333', weight: '700' } as FontConfig,
-  telefone: { family: 'Arial, sans-serif', size: 30, color: '#333333', weight: '400' } as FontConfig,
-  email: { family: 'Arial, sans-serif', size: 30, color: '#333333', weight: '400' } as FontConfig,
+  nome: { family: 'Arial, sans-serif', size: 40, color: '#000000', weight: '700' } as FontConfig,
+  telefone: { family: 'Arial, sans-serif', size: 30, color: '#000000', weight: '400' } as FontConfig,
+  email: { family: 'Arial, sans-serif', size: 30, color: '#000000', weight: '400' } as FontConfig,
 };
 
 export async function POST(req: Request) {
@@ -95,7 +95,6 @@ async function generateSignatureImage(params: {
   const { nome, telefone, email, templatePath } = params;
   
   try {
-    // Primeiro teste sem fonte customizada - usar Arial do sistema
     const templateBuffer = fs.readFileSync(templatePath);
     const template = sharp(templateBuffer);
     const { width, height } = await template.metadata();
@@ -114,69 +113,84 @@ async function generateSignatureImage(params: {
       telefone: { x: leftMargin, y: startY + lineHeight * 2 },
     };
 
-    const textElements: string[] = [];
+    // Criar cada texto como SVG separado e compor
+    const compositeElements: sharp.OverlayOptions[] = [];
 
     // Nome
-    textElements.push(`
-      <text 
-        x="${textPositions.nome.x}" 
-        y="${textPositions.nome.y}" 
-        font-family="${FONT_CONFIGS.nome.family}" 
-        font-size="${FONT_CONFIGS.nome.size}" 
-        font-weight="${FONT_CONFIGS.nome.weight}"
-        fill="${FONT_CONFIGS.nome.color}"
-        text-anchor="start"
-        dominant-baseline="hanging"
-      >${escapeXml(nome)}</text>
-    `);
+    const nomeSvg = `
+      <svg width="${width}" height="60" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="transparent"/>
+        <text 
+          x="0" 
+          y="45" 
+          font-family="Arial" 
+          font-size="40" 
+          font-weight="700"
+          fill="#000000"
+          text-anchor="start"
+        >${escapeXml(nome)}</text>
+      </svg>
+    `;
+    
+    compositeElements.push({
+      input: Buffer.from(nomeSvg),
+      left: textPositions.nome.x,
+      top: textPositions.nome.y - 15 // Ajustar baseline
+    });
 
     // Email
-    textElements.push(`
-      <text 
-        x="${textPositions.email.x}" 
-        y="${textPositions.email.y}" 
-        font-family="${FONT_CONFIGS.email.family}" 
-        font-size="${FONT_CONFIGS.email.size}" 
-        font-weight="${FONT_CONFIGS.email.weight}"
-        fill="${FONT_CONFIGS.email.color}"
-        text-anchor="start"
-        dominant-baseline="hanging"
-      >${escapeXml(email)}</text>
-    `);
+    const emailSvg = `
+      <svg width="${width}" height="40" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="transparent"/>
+        <text 
+          x="0" 
+          y="30" 
+          font-family="Arial" 
+          font-size="30" 
+          font-weight="400"
+          fill="#000000"
+          text-anchor="start"
+        >${escapeXml(email)}</text>
+      </svg>
+    `;
+    
+    compositeElements.push({
+      input: Buffer.from(emailSvg),
+      left: textPositions.email.x,
+      top: textPositions.email.y - 10
+    });
 
     // Telefone (se fornecido)
     if (telefone?.trim()) {
-      textElements.push(`
-        <text 
-          x="${textPositions.telefone.x}" 
-          y="${textPositions.telefone.y}" 
-          font-family="${FONT_CONFIGS.telefone.family}" 
-          font-size="${FONT_CONFIGS.telefone.size}" 
-          font-weight="${FONT_CONFIGS.telefone.weight}"
-          fill="${FONT_CONFIGS.telefone.color}"
-          text-anchor="start"
-          dominant-baseline="hanging"
-        >${escapeXml(telefone)}</text>
-      `);
+      const telefoneSvg = `
+        <svg width="${width}" height="40" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="transparent"/>
+          <text 
+            x="0" 
+            y="30" 
+            font-family="Arial" 
+            font-size="30" 
+            font-weight="400"
+            fill="#000000"
+            text-anchor="start"
+          >${escapeXml(telefone)}</text>
+        </svg>
+      `;
+      
+      compositeElements.push({
+        input: Buffer.from(telefoneSvg),
+        left: textPositions.telefone.x,
+        top: textPositions.telefone.y - 10
+      });
     }
 
-    // Criar SVG overlay simples (sem fonte customizada primeiro)
-    const textOverlaySvg = `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        ${textElements.join('\n')}
-      </svg>
-    `;
-
-    // Debug: log do SVG gerado
-    console.log('SVG gerado:', textOverlaySvg.substring(0, 500));
-    console.log('Dimensões do template:', { width, height });
-    console.log('Posições do texto:', textPositions);
-
-    const textOverlayBuffer = Buffer.from(textOverlaySvg, 'utf-8');
+    // Debug logs
+    console.log('Número de elementos compostos:', compositeElements.length);
+    console.log('Primeiro SVG:', nomeSvg.substring(0, 200));
 
     // Compor a imagem final
     return await template
-      .composite([{ input: textOverlayBuffer, top: 0, left: 0 }])
+      .composite(compositeElements)
       .png({ quality: 100, compressionLevel: 0 })
       .toBuffer();
       

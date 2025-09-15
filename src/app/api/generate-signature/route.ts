@@ -39,6 +39,26 @@ const FONT_CONFIGS = {
 };
 
 export async function POST(req: Request) {
+  // Criar configuração temporária do fontconfig
+  const tempConfigContent = `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <config></config>
+</fontconfig>`;
+  
+  const tempDir = path.join(process.cwd(), '.tmp');
+  const tempConfigPath = path.join(tempDir, 'fonts.conf');
+  
+  try {
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    fs.writeFileSync(tempConfigPath, tempConfigContent);
+    process.env.FONTCONFIG_FILE = tempConfigPath;
+  } catch (e) {
+    // Ignorar erros na criação do arquivo temporário
+  }
+
   try {
     const { nome, telefone, email }: SignatureData = await req.json();
 

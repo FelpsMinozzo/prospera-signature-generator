@@ -3,8 +3,9 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
 
-// Configurar variável de ambiente para evitar erro do fontconfig
 process.env.FONTCONFIG_PATH = '';
+process.env.FONTCONFIG_FILE = '';
+process.env.FC_CONFIG_FILE = '';
 
 export const runtime = 'nodejs';
 
@@ -22,9 +23,9 @@ interface FontConfig {
 }
 
 const FONT_CONFIGS = {
-  nome: { family: 'Arial, sans-serif', size: 40, color: '#333333', weight: 'bold' } as FontConfig,
-  telefone: { family: 'Arial, sans-serif', size: 30, color: '#333333', weight: 'normal' } as FontConfig,
-  email: { family: 'Arial, sans-serif', size: 30, color: '#333333', weight: 'normal' } as FontConfig,
+  nome: { family: 'CustomArial, Arial, sans-serif', size: 40, color: '#333333', weight: 'bold' } as FontConfig,
+  telefone: { family: 'CustomArial, Arial, sans-serif', size: 30, color: '#333333', weight: 'normal' } as FontConfig,
+  email: { family: 'CustomArial, Arial, sans-serif', size: 30, color: '#333333', weight: 'normal' } as FontConfig,
 };
 
 export async function POST(req: Request) {
@@ -95,6 +96,15 @@ async function generateSignatureImage(params: {
   const { nome, telefone, email, templatePath } = params;
   
   try {
+    // Carregar fonte customizada
+    const fontPath = path.join(process.cwd(), 'public', 'fonts', 'ARIAL.TTF');
+    let fontBase64 = '';
+    
+    if (fs.existsSync(fontPath)) {
+      const fontBuffer = fs.readFileSync(fontPath);
+      fontBase64 = fontBuffer.toString('base64');
+    }
+
     const templateBuffer = fs.readFileSync(templatePath);
     const template = sharp(templateBuffer);
     const { width, height } = await template.metadata();
@@ -159,9 +169,18 @@ async function generateSignatureImage(params: {
       `);
     }
 
-    // Criar SVG overlay
+    // Criar SVG overlay com fonte customizada
     const textOverlaySvg = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <style>
+            ${fontBase64 ? `
+            @font-face {
+              font-family: 'CustomArial';
+              src: url('data:font/truetype;base64,${fontBase64}');
+            }` : ''}
+          </style>
+        </defs>
         ${textElements.join('\n')}
       </svg>
     `;

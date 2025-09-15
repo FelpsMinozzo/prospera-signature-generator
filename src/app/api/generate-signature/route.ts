@@ -103,9 +103,10 @@ async function generateSignatureImage(params: {
       throw new Error('Não foi possível obter dimensões do template');
     }
 
-    const leftMargin = 420;
-    const startY = 180;
-    const lineHeight = 40;
+    // Ajustar posições baseado na análise da imagem
+    const leftMargin = 500; // Era 420, vamos mover mais para direita
+    const startY = 140;     // Era 180, vamos subir um pouco
+    const lineHeight = 35;  // Era 40, vamos diminuir espaçamento
 
     const textPositions = {
       nome: { x: leftMargin, y: startY },
@@ -113,21 +114,18 @@ async function generateSignatureImage(params: {
       telefone: { x: leftMargin, y: startY + lineHeight * 2 },
     };
 
-    // Vamos tentar com método mais simples - SVGs sem font-family específica
+    // Voltar ao texto real com configurações mais robustas
     const compositeElements: sharp.OverlayOptions[] = [];
 
-    // Nome - usando sans-serif genérica
+    // Nome - usando configurações mais básicas e compatíveis
     const nomeSvg = `
-      <svg width="800" height="80" xmlns="http://www.w3.org/2000/svg">
+      <svg width="600" height="60" xmlns="http://www.w3.org/2000/svg">
         <text 
-          x="10" 
-          y="50" 
-          font-family="sans-serif" 
-          font-size="40" 
-          font-weight="bold"
-          fill="#000000"
-          stroke="#000000"
-          stroke-width="0.5"
+          x="0" 
+          y="40" 
+          font-size="36" 
+          fill="black"
+          font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
         >${escapeXml(nome)}</text>
       </svg>
     `;
@@ -135,21 +133,18 @@ async function generateSignatureImage(params: {
     compositeElements.push({
       input: Buffer.from(nomeSvg),
       left: textPositions.nome.x,
-      top: textPositions.nome.y - 20
+      top: textPositions.nome.y
     });
 
     // Email
     const emailSvg = `
-      <svg width="800" height="60" xmlns="http://www.w3.org/2000/svg">
+      <svg width="600" height="40" xmlns="http://www.w3.org/2000/svg">
         <text 
-          x="10" 
-          y="40" 
-          font-family="sans-serif" 
-          font-size="30" 
-          font-weight="normal"
-          fill="#000000"
-          stroke="#000000"
-          stroke-width="0.3"
+          x="0" 
+          y="30" 
+          font-size="26" 
+          fill="black"
+          font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
         >${escapeXml(email)}</text>
       </svg>
     `;
@@ -157,22 +152,19 @@ async function generateSignatureImage(params: {
     compositeElements.push({
       input: Buffer.from(emailSvg),
       left: textPositions.email.x,
-      top: textPositions.email.y - 15
+      top: textPositions.email.y
     });
 
     // Telefone (se fornecido)
     if (telefone?.trim()) {
       const telefoneSvg = `
-        <svg width="800" height="60" xmlns="http://www.w3.org/2000/svg">
+        <svg width="600" height="40" xmlns="http://www.w3.org/2000/svg">
           <text 
-            x="10" 
-            y="40" 
-            font-family="sans-serif" 
-            font-size="30" 
-            font-weight="normal"
-            fill="#000000"
-            stroke="#000000"
-            stroke-width="0.3"
+            x="0" 
+            y="30" 
+            font-size="26" 
+            fill="black"
+            font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
           >${escapeXml(telefone)}</text>
         </svg>
       `;
@@ -180,17 +172,13 @@ async function generateSignatureImage(params: {
       compositeElements.push({
         input: Buffer.from(telefoneSvg),
         left: textPositions.telefone.x,
-        top: textPositions.telefone.y - 15
+        top: textPositions.telefone.y
       });
     }
 
-    // Debug logs mais detalhados
-    console.log('Número de elementos compostos:', compositeElements.length);
-    console.log('Nome SVG completo:', nomeSvg);
-    console.log('Posições calculadas:', {
-      nome: { left: textPositions.nome.x, top: textPositions.nome.y - 20 },
-      email: { left: textPositions.email.x, top: textPositions.email.y - 15 }
-    });
+    console.log('Testando com texto real e fontes do sistema Linux');
+    console.log('Nome a renderizar:', nome);
+    console.log('Email a renderizar:', email);
 
     // Compor a imagem final
     return await template

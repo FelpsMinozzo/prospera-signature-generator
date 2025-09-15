@@ -113,21 +113,21 @@ async function generateSignatureImage(params: {
       telefone: { x: leftMargin, y: startY + lineHeight * 2 },
     };
 
-    // Criar cada texto como SVG separado e compor
+    // Vamos tentar com método mais simples - SVGs sem font-family específica
     const compositeElements: sharp.OverlayOptions[] = [];
 
-    // Nome
+    // Nome - usando sans-serif genérica
     const nomeSvg = `
-      <svg width="${width}" height="60" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="transparent"/>
+      <svg width="800" height="80" xmlns="http://www.w3.org/2000/svg">
         <text 
-          x="0" 
-          y="45" 
-          font-family="Arial" 
+          x="10" 
+          y="50" 
+          font-family="sans-serif" 
           font-size="40" 
-          font-weight="700"
+          font-weight="bold"
           fill="#000000"
-          text-anchor="start"
+          stroke="#000000"
+          stroke-width="0.5"
         >${escapeXml(nome)}</text>
       </svg>
     `;
@@ -135,21 +135,21 @@ async function generateSignatureImage(params: {
     compositeElements.push({
       input: Buffer.from(nomeSvg),
       left: textPositions.nome.x,
-      top: textPositions.nome.y - 15 // Ajustar baseline
+      top: textPositions.nome.y - 20
     });
 
     // Email
     const emailSvg = `
-      <svg width="${width}" height="40" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="transparent"/>
+      <svg width="800" height="60" xmlns="http://www.w3.org/2000/svg">
         <text 
-          x="0" 
-          y="30" 
-          font-family="Arial" 
+          x="10" 
+          y="40" 
+          font-family="sans-serif" 
           font-size="30" 
-          font-weight="400"
+          font-weight="normal"
           fill="#000000"
-          text-anchor="start"
+          stroke="#000000"
+          stroke-width="0.3"
         >${escapeXml(email)}</text>
       </svg>
     `;
@@ -157,22 +157,22 @@ async function generateSignatureImage(params: {
     compositeElements.push({
       input: Buffer.from(emailSvg),
       left: textPositions.email.x,
-      top: textPositions.email.y - 10
+      top: textPositions.email.y - 15
     });
 
     // Telefone (se fornecido)
     if (telefone?.trim()) {
       const telefoneSvg = `
-        <svg width="${width}" height="40" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="transparent"/>
+        <svg width="800" height="60" xmlns="http://www.w3.org/2000/svg">
           <text 
-            x="0" 
-            y="30" 
-            font-family="Arial" 
+            x="10" 
+            y="40" 
+            font-family="sans-serif" 
             font-size="30" 
-            font-weight="400"
+            font-weight="normal"
             fill="#000000"
-            text-anchor="start"
+            stroke="#000000"
+            stroke-width="0.3"
           >${escapeXml(telefone)}</text>
         </svg>
       `;
@@ -180,13 +180,17 @@ async function generateSignatureImage(params: {
       compositeElements.push({
         input: Buffer.from(telefoneSvg),
         left: textPositions.telefone.x,
-        top: textPositions.telefone.y - 10
+        top: textPositions.telefone.y - 15
       });
     }
 
-    // Debug logs
+    // Debug logs mais detalhados
     console.log('Número de elementos compostos:', compositeElements.length);
-    console.log('Primeiro SVG:', nomeSvg.substring(0, 200));
+    console.log('Nome SVG completo:', nomeSvg);
+    console.log('Posições calculadas:', {
+      nome: { left: textPositions.nome.x, top: textPositions.nome.y - 20 },
+      email: { left: textPositions.email.x, top: textPositions.email.y - 15 }
+    });
 
     // Compor a imagem final
     return await template

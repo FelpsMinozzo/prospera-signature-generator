@@ -115,6 +115,8 @@ async function generateSignatureImage(params: {
 
   const svgBuffer = Buffer.from(svg, 'utf-8');
 
+  console.log(svgBuffer);
+
   return await template
     .composite([{ input: svgBuffer, top: 0, left: 0 }])
     .png({ quality: 100, compressionLevel: 0 })

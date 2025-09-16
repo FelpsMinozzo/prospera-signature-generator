@@ -275,10 +275,10 @@ async function generateSignatureImage(params: {
   const style = `
     @font-face {
       font-family: 'Arial';
-      src: url(data:font/truetype;charset=utf-8;base64,${fontData}) format('truetype');
+      src:url(../../../../public/fonts/arial.ttf) format('truetype');
     }
     .text {
-      font-family: 'Arial';
+      font-family: 'Arial', 'sans-serif';
       fill: #333333;
       font-weight: normal;
     }

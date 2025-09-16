@@ -20,7 +20,7 @@
   }
   
   .nameText {
-    font-family: 'Inter', Arial, sans-serif;
+    font-family: 'Inter', "Arial", sans-serif;
     font-size: 18px;
     font-weight: 700;
     color: #333333;
@@ -28,7 +28,7 @@
   }
   
   .emailText {
-    font-family: 'Inter', Arial, sans-serif;
+    font-family: 'Inter', "Arial", sans-serif;
     font-size: 14px;
     font-weight: 400;
     color: #0066cc;
@@ -36,7 +36,7 @@
   }
   
   .phoneText {
-    font-family: 'Inter', Arial, sans-serif;
+    font-family: 'Inter', "Arial", sans-serif;
     font-size: 14px;
     font-weight: 400;
     color: #666666;

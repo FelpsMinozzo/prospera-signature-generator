@@ -74,12 +74,12 @@ async function generateSignatureImage(params: {
     throw new Error('Não foi possível obter dimensões do template');
   }
 
-  const fontPath = path.join(process.cwd(), 'public', 'fonts', 'arial.ttf');
-  if (!fs.existsSync(fontPath)) {
-    throw new Error('Fonte ARIAL.TTF não encontrada');
-  }
+  // const fontPath = path.join(process.cwd(), 'public', 'fonts', 'arial.ttf');
+  // if (!fs.existsSync(fontPath)) {
+  //   throw new Error('Fonte ARIAL.TTF não encontrada');
+  // }
 
-  const fontData = fs.readFileSync(fontPath).toString('base64');
+  // const fontData = fs.readFileSync(fontPath).toString('base64');
 
   const style = `
     .text {

@@ -113,6 +113,8 @@ async function generateSignatureImage(params: {
     </svg>
   `;
 
+  console.log(svg);
+
   const svgBuffer = Buffer.from(svg, 'utf-8');
 
   console.log(svgBuffer);

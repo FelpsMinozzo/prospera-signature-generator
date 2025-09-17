@@ -26,7 +26,7 @@ const fontPath = path.join(process.cwd(), 'public', 'fonts', 'OpenSans-Regular.t
 if (!fs.existsSync(fontPath)) {
   throw new Error('Fonte OpenSans não encontrada no servidor');
 }
-registerFont(fontPath, { family: 'ArialMT' });
+registerFont(fontPath, { family: 'OpenSans' });
 
 export async function POST(req: Request) {
   try {
@@ -86,14 +86,12 @@ async function generateSignatureImage(params: {
   const canvas = createCanvas(template.width!, template.height!);
   const ctx = canvas.getContext('2d');
 
-  // Desenhar template
   ctx.drawImage(template, 0, 0);
 
   const leftMargin = 420;
   const startY = 180;
-  const lineHeight = 40;
+  const lineHeight = 60;
 
-  // Função para desenhar texto com configuração
   function drawText(text: string, fontConfig: FontConfig, x: number, y: number) {
     ctx.font = `${fontConfig.size}px ${fontConfig.family}`;
     ctx.fillStyle = fontConfig.color;

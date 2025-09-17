@@ -89,8 +89,8 @@ async function generateSignatureImage(params: {
   ctx.drawImage(template, 0, 0);
 
   const leftMargin = 420;
-  const startY = 180;
-  const lineHeight = 60;
+  const startY = 200;
+  const lineHeight = 55;
 
   function drawText(text: string, fontConfig: FontConfig, x: number, y: number) {
     ctx.font = `${fontConfig.size}px ${fontConfig.family}`;

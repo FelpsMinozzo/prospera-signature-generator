@@ -17,14 +17,14 @@ interface FontConfig {
 }
 
 const FONT_CONFIGS = {
-  nome: { family: 'ArialMT', size: 40, color: '#333333', weight: 400 } as FontConfig,
-  telefone: { family: 'ArialMT', size: 30, color: '#333333', weight: 400 } as FontConfig,
-  email: { family: 'ArialMT', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  nome: { family: 'OpenSans', size: 40, color: '#333333', weight: 400 } as FontConfig,
+  telefone: { family: 'OpenSans', size: 35, color: '#333333', weight: 400 } as FontConfig,
+  email: { family: 'OpenSans', size: 30, color: '#333333', weight: 400 } as FontConfig,
 };
 
-const fontPath = path.join(process.cwd(), 'public', 'fonts', 'ARIAL.TTF');
+const fontPath = path.join(process.cwd(), 'public', 'fonts', 'OpenSans-Regular.ttf');
 if (!fs.existsSync(fontPath)) {
-  throw new Error('Fonte ArialMT não encontrada no servidor');
+  throw new Error('Fonte OpenSans não encontrada no servidor');
 }
 registerFont(fontPath, { family: 'ArialMT' });
 

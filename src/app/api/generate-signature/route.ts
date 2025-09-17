@@ -273,12 +273,8 @@ async function generateSignatureImage(params: {
   const fontData = fs.readFileSync(fontPath).toString('base64');
 
   const style = `
-    @font-face {
-      font-family: 'Arial';
-      src: url(../../../../public/fonts/arial.ttf) format('truetype');
-    }
     .text {
-      font-family: 'Arial';
+      font-family: 'sans-serif';
       fill: #333333;
       font-weight: normal;
     }
@@ -307,7 +303,7 @@ async function generateSignatureImage(params: {
       ${lines.join('\n')}
     </svg>
   `;
-
+  
   const svgBuffer = Buffer.from(svg, 'utf-8');
 
   return await template

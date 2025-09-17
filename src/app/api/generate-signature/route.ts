@@ -18,8 +18,8 @@ interface FontConfig {
 
 const FONT_CONFIGS = {
   nome: { family: 'OpenSans', size: 40, color: '#333333', weight: 400 } as FontConfig,
-  telefone: { family: 'OpenSans', size: 35, color: '#333333', weight: 400 } as FontConfig,
-  email: { family: 'OpenSans', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  telefone: { family: 'OpenSans', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  email: { family: 'OpenSans', size: 35, color: '#333333', weight: 400 } as FontConfig,
 };
 
 const fontPath = path.join(process.cwd(), 'public', 'fonts', 'OpenSans-Regular.ttf');

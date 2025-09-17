@@ -89,7 +89,7 @@ async function generateSignatureImage(params: {
   ctx.drawImage(template, 0, 0);
 
   const leftMargin = 420;
-  const startY = 160;
+  const startY = 140;
   const lineHeight = 50;
 
   function drawText(text: string, fontConfig: FontConfig, x: number, y: number) {

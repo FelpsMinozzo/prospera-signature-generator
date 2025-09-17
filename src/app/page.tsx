@@ -313,19 +313,25 @@ export default function Home() {
     });
   }, [formData.email, emailTouched]);
 
-  // Função para formatar o telefone
-  const formatPhone = (value: string): string => {
-    const digits = value.replace(/\D/g, "");
-    if (digits.length <= 2) {
-      return `(${digits}`;
-    } else if (digits.length <= 6) {
-      return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    } else if (digits.length <= 10) {
-      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-    } else {
-      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-    }
-  };
+const formatPhone = (value: string): string => {
+  const digits = value.replace(/\D/g, "");
+  
+  if (digits.length === 0) {
+    return "";
+  }
+  
+  if (digits.length === 1) {
+    return `(${digits}`;
+  } else if (digits.length === 2) {
+    return `(${digits}`;
+  } else if (digits.length <= 6) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  } else if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  } else {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  }
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

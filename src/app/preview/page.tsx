@@ -128,31 +128,6 @@ export default function Preview() {
     }
   };
 
-  const handleRegenerateSignature = async () => {
-    if (!signatureData) {
-      toast.error('Nenhum dado disponÃ­vel para regenerar assinatura.');
-      return;
-    }
-    
-    try {
-      // Libera a URL atual
-      if (signatureData.signatureUrl) {
-        URL.revokeObjectURL(signatureData.signatureUrl);
-      }
-      
-      const formData: FormData = {
-        nome: signatureData.nome,
-        telefone: signatureData.telefone,
-        email: signatureData.email
-      };
-      
-      toast.info('Regenerando assinatura...');
-      await generateSignature(formData);
-    } catch (error) {
-      toast.error('Erro ao regenerar assinatura.');
-    }
-  };
-
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen error={error} onBack={handleNewSignature} />;
 
@@ -182,7 +157,6 @@ export default function Preview() {
               <SignatureActions
                 onDownload={handleDownload}
                 onNew={handleNewSignature}
-                onRegenerate={handleRegenerateSignature}
                 disabled={!signatureData?.signatureUrl}
               />
               

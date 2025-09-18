@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Head from 'next/head';
+import { toast } from 'react-toastify';
 import styles from '../styles/Preview.module.css';
 import {
   LoadingScreen,
@@ -33,6 +34,7 @@ export default function Preview() {
     
     const formDataStr = localStorage.getItem('formData');
     if (!formDataStr) {
+      toast.error('Nenhum dado encontrado. Redirecionando para o formulÃ¡rio...');
       router.push('/');
       return;
     }
@@ -41,7 +43,9 @@ export default function Preview() {
       const formData: FormData = JSON.parse(formDataStr);
       generateSignature(formData);
     } catch {
-      setError('Erro ao carregar dados do formulário.');
+      const errorMsg = 'Erro ao carregar dados do formulÃ¡rio.';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
     }
   }, [router]);
@@ -50,6 +54,7 @@ export default function Preview() {
     setGeneratingSignature(true);
     
     try {
+      // Chama API para gerar assinatura
       const response = await fetch("/api/generate-signature", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -63,17 +68,22 @@ export default function Preview() {
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
 
+      // Cria o objeto completo com a assinatura
       const signatureDataComplete: SignatureData = {
         ...formData,
         signatureUrl: url,
       };
 
+      // Salva dados completos + assinatura
       localStorage.setItem("signatureData", JSON.stringify(signatureDataComplete));
       
       setSignatureData(signatureDataComplete);
+      toast.success('Assinatura gerada com sucesso!');
     } catch (error) {
       console.error("Erro:", error);
-      setError("Erro ao gerar assinatura. Tente novamente.");
+      const errorMsg = "Erro ao gerar assinatura. Tente novamente.";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setGeneratingSignature(false);
       setLoading(false);
@@ -81,43 +91,66 @@ export default function Preview() {
   };
 
   const handleDownload = () => {
-    if (!signatureData?.signatureUrl) return;
+    if (!signatureData?.signatureUrl) {
+      toast.error('Nenhuma assinatura disponÃ­vel para download.');
+      return;
+    }
     
-    const link = document.createElement('a');
-    link.href = signatureData.signatureUrl;
-    link.download = `assinatura-${signatureData.nome.replace(/\s+/g, '-').toLowerCase()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const link = document.createElement('a');
+      link.href = signatureData.signatureUrl;
+      link.download = `assinatura-${signatureData.nome.replace(/\s+/g, '-').toLowerCase()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Download iniciado!');
+    } catch (error) {
+      toast.error('Erro ao fazer download da assinatura.');
+    }
   };
 
   const handleNewSignature = () => {
-    // Limpa todos os dados armazenados
-    localStorage.removeItem('signatureData');
-    localStorage.removeItem('formData');
-    
-    // Libera a URL do blob se existir
-    if (signatureData?.signatureUrl) {
-      URL.revokeObjectURL(signatureData.signatureUrl);
+    try {
+      // Limpa todos os dados armazenados
+      localStorage.removeItem('signatureData');
+      localStorage.removeItem('formData');
+      
+      // Libera a URL do blob se existir
+      if (signatureData?.signatureUrl) {
+        URL.revokeObjectURL(signatureData.signatureUrl);
+      }
+      
+      toast.info('Redirecionando para criar nova assinatura...');
+      router.push('/');
+    } catch (error) {
+      toast.error('Erro ao limpar dados. Redirecionando...');
+      router.push('/');
     }
-    
-    router.push('/');
   };
 
   const handleRegenerateSignature = async () => {
-    if (!signatureData) return;
-
-    if (signatureData.signatureUrl) {
-      URL.revokeObjectURL(signatureData.signatureUrl);
+    if (!signatureData) {
+      toast.error('Nenhum dado disponÃ­vel para regenerar assinatura.');
+      return;
     }
     
-    const formData: FormData = {
-      nome: signatureData.nome,
-      telefone: signatureData.telefone,
-      email: signatureData.email
-    };
-    
-    await generateSignature(formData);
+    try {
+      // Libera a URL atual
+      if (signatureData.signatureUrl) {
+        URL.revokeObjectURL(signatureData.signatureUrl);
+      }
+      
+      const formData: FormData = {
+        nome: signatureData.nome,
+        telefone: signatureData.telefone,
+        email: signatureData.email
+      };
+      
+      toast.info('Regenerando assinatura...');
+      await generateSignature(formData);
+    } catch (error) {
+      toast.error('Erro ao regenerar assinatura.');
+    }
   };
 
   if (loading) return <LoadingScreen />;
@@ -149,6 +182,7 @@ export default function Preview() {
               <SignatureActions
                 onDownload={handleDownload}
                 onNew={handleNewSignature}
+                onRegenerate={handleRegenerateSignature}
                 disabled={!signatureData?.signatureUrl}
               />
               

@@ -34,7 +34,7 @@ export default function Preview() {
     
     const formDataStr = localStorage.getItem('formData');
     if (!formDataStr) {
-      toast.error('Nenhum dado encontrado. Redirecionando para o formulÃ¡rio...');
+      toast.error('Nenhum dado encontrado. Redirecionando para o formulário...');
       router.push('/');
       return;
     }
@@ -43,7 +43,7 @@ export default function Preview() {
       const formData: FormData = JSON.parse(formDataStr);
       generateSignature(formData);
     } catch {
-      const errorMsg = 'Erro ao carregar dados do formulÃ¡rio.';
+      const errorMsg = 'Erro ao carregar dados do formulário.';
       setError(errorMsg);
       toast.error(errorMsg);
       setLoading(false);

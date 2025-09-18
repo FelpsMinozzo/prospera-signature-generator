@@ -1,196 +1,109 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Head from 'next/head';
-import { toast } from 'react-toastify';
-import styles from '../styles/Preview.module.css';
-import {
-  LoadingScreen,
-  ErrorScreen,
-  SignaturePreview,
-  SignatureActions,
-  SignatureDataInfo
-} from '../components';
+import { NextResponse } from 'next/server';
+import { createCanvas, loadImage, registerFont } from 'canvas';
+import path from 'path';
+import fs from 'fs';
 
-interface FormData {
+interface SignatureData {
   nome: string;
-  telefone: string;
+  telefone?: string;
   email: string;
 }
 
-interface SignatureData extends FormData {
-  signatureUrl: string;
+interface FontConfig {
+  family: string;
+  size: number;
+  color: string;
+  weight: number;
 }
 
-export default function Preview() {
-  const [signatureData, setSignatureData] = useState<SignatureData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [generatingSignature, setGeneratingSignature] = useState(false);
-  const router = useRouter();
+const FONT_CONFIGS = {
+  nome: { family: 'OpenSans', size: 40, color: '#333333', weight: 400 } as FontConfig,
+  telefone: { family: 'OpenSans', size: 30, color: '#333333', weight: 400 } as FontConfig,
+  email: { family: 'OpenSans', size: 35, color: '#333333', weight: 400 } as FontConfig,
+};
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const formDataStr = localStorage.getItem('formData');
-    if (!formDataStr) {
-      toast.error('Nenhum dado encontrado. Redirecionando para o formulário...');
-      router.push('/');
-      return;
+const fontPath = path.join(process.cwd(), 'public', 'fonts', 'OpenSans-Regular.ttf');
+if (!fs.existsSync(fontPath)) {
+  throw new Error('Fonte OpenSans não encontrada no servidor');
+}
+registerFont(fontPath, { family: 'OpenSans' });
+
+export async function POST(req: Request) {
+  try {
+    const { nome, telefone, email }: SignatureData = await req.json();
+
+    if (!nome || !email) {
+      return NextResponse.json(
+        { success: false, error: 'Nome e email são obrigatórios' },
+        { status: 400 }
+      );
     }
 
-    try {
-      const formData: FormData = JSON.parse(formDataStr);
-      generateSignature(formData);
-    } catch {
-      const errorMsg = 'Erro ao carregar dados do formulário.';
-      setError(errorMsg);
-      toast.error(errorMsg);
-      setLoading(false);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { success: false, error: 'Formato de email inválido' },
+        { status: 400 }
+      );
     }
-  }, [router]);
 
-  const generateSignature = async (formData: FormData) => {
-    setGeneratingSignature(true);
-    
-    try {
-      // Chama API para gerar assinatura
-      const response = await fetch("/api/generate-signature", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao gerar assinatura");
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      // Cria o objeto completo com a assinatura
-      const signatureDataComplete: SignatureData = {
-        ...formData,
-        signatureUrl: url,
-      };
-
-      // Salva dados completos + assinatura
-      localStorage.setItem("signatureData", JSON.stringify(signatureDataComplete));
-      
-      setSignatureData(signatureDataComplete);
-      toast.success('Assinatura gerada com sucesso!');
-    } catch (error) {
-      console.error("Erro:", error);
-      const errorMsg = "Erro ao gerar assinatura. Tente novamente.";
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setGeneratingSignature(false);
-      setLoading(false);
+    const templatePath = path.join(process.cwd(), 'public', 'templates', 'signature-template.png');
+    if (!fs.existsSync(templatePath)) {
+      return NextResponse.json(
+        { success: false, error: 'Template de assinatura não encontrado' },
+        { status: 500 }
+      );
     }
-  };
 
-  const handleDownload = () => {
-    if (!signatureData?.signatureUrl) {
-      toast.error('Nenhuma assinatura disponível para download.');
-      return;
-    }
-    
-    try {
-      const link = document.createElement('a');
-      link.href = signatureData.signatureUrl;
-      link.download = `assinatura-${signatureData.nome.replace(/\s+/g, '-').toLowerCase()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success('Download iniciado!');
-    } catch (error) {
-      toast.error('Erro ao fazer download da assinatura.');
-    }
-  };
+    const signatureBuffer = await generateSignatureImage({ nome, telefone, email, templatePath });
 
-  const handleNewSignature = () => {
-    try {
-      // Limpa todos os dados armazenados
-      localStorage.removeItem('signatureData');
-      localStorage.removeItem('formData');
-      
-      // Libera a URL do blob se existir
-      if (signatureData?.signatureUrl) {
-        URL.revokeObjectURL(signatureData.signatureUrl);
-      }
-      
-      toast.info('Redirecionando para criar nova assinatura...');
-      router.push('/');
-    } catch (error) {
-      toast.error('Erro ao limpar dados. Redirecionando...');
-      router.push('/');
-    }
-  };
+    return new Response(new Uint8Array(signatureBuffer), {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/png',
+        'Content-Disposition': `attachment; filename="assinatura-${nome.replace(/\s+/g, '-').toLowerCase()}.png"`,
+        'Cache-Control': 'no-cache',
+      },
+    });
+  } catch (error) {
+    console.error('Erro ao gerar assinatura:', error);
+    return NextResponse.json(
+      { success: false, error: 'Erro interno do servidor ao gerar assinatura' },
+      { status: 500 }
+    );
+  }
+}
 
-  const handleRegenerateSignature = async () => {
-    if (!signatureData) {
-      toast.error('Nenhum dado disponível para regenerar assinatura.');
-      return;
-    }
-    
-    try {
-      // Libera a URL atual
-      if (signatureData.signatureUrl) {
-        URL.revokeObjectURL(signatureData.signatureUrl);
-      }
-      
-      const formData: FormData = {
-        nome: signatureData.nome,
-        telefone: signatureData.telefone,
-        email: signatureData.email
-      };
-      
-      toast.info('Regenerando assinatura...');
-      await generateSignature(formData);
-    } catch (error) {
-      toast.error('Erro ao regenerar assinatura.');
-    }
-  };
+async function generateSignatureImage(params: {
+  nome: string;
+  telefone?: string;
+  email: string;
+  templatePath: string;
+}): Promise<Buffer> {
+  const { nome, telefone, email, templatePath } = params;
 
-  if (loading) return <LoadingScreen />;
-  if (error) return <ErrorScreen error={error} onBack={handleNewSignature} />;
+  const template = await loadImage(templatePath);
+  const canvas = createCanvas(template.width!, template.height!);
+  const ctx = canvas.getContext('2d');
 
-  return (
-    <>
-      <Head>
-        <title>Preview da Assinatura</title>
-        <meta name="description" content="Visualize e baixe sua assinatura personalizada" />
-      </Head>
-      <div className={styles.container}>
-        <main className={styles.main}>
-          <h1 className={styles.title}>
-            {generatingSignature ? 'Gerando sua Assinatura...' : 'Preview da sua Assinatura'}
-          </h1>
-          
-          {generatingSignature ? (
-            <div className={styles.generatingSection}>
-              <div className={styles.loadingSpinner}></div>
-              <p>Por favor, aguarde enquanto geramos sua assinatura personalizada...</p>
-            </div>
-          ) : (
-            <>
-              <div className={styles.previewSection}>
-                <SignaturePreview url={signatureData?.signatureUrl ?? ''} />
-              </div>
-              
-              <SignatureActions
-                onDownload={handleDownload}
-                onNew={handleNewSignature}
-                onRegenerate={handleRegenerateSignature}
-                disabled={!signatureData?.signatureUrl}
-              />
-              
-              {signatureData && <SignatureDataInfo data={signatureData} />}
-            </>
-          )}
-        </main>
-      </div>
-    </>
-  );
+  ctx.drawImage(template, 0, 0);
+
+  const leftMargin = 420;
+  const startY = 140;
+  const lineHeight = 50;
+
+  function drawText(text: string, fontConfig: FontConfig, x: number, y: number) {
+    ctx.font = `${fontConfig.size}px ${fontConfig.family}`;
+    ctx.fillStyle = fontConfig.color;
+    ctx.textBaseline = 'top';
+    ctx.fillText(text, x, y);
+  }
+
+  drawText(nome, FONT_CONFIGS.nome, leftMargin, startY);
+  drawText(email, FONT_CONFIGS.email, leftMargin, startY + lineHeight);
+  if (telefone?.trim()) {
+    drawText(telefone, FONT_CONFIGS.telefone, leftMargin, startY + lineHeight * 2);
+  }
+
+  return canvas.toBuffer('image/png');
 }
